@@ -293,7 +293,7 @@
 <!-- SIDEBAR -->
 <nav id="sidebar">
   <div class="logo">
-    <div class="logo-word">Mesa</div>
+    <div class="logo-word">Saurav</div>
     <div class="logo-sub">Restaurant Manager</div>
   </div>
   <div class="nav">
@@ -694,7 +694,7 @@
 const TAGS = ['VIP', 'Birthday', 'Anniversary', 'Special Request', 'Large Party'];
 const AREAS = ['Indoor', 'Outdoor', 'Banquet'];
 
-let tables = JSON.parse(localStorage.getItem('mesa_tables') || 'null') || [
+let tables = JSON.parse(localStorage.getItem('Saurav_tables') || 'null') || [
   {id:1,cap:2,area:'Indoor',status:'available'},{id:2,cap:2,area:'Indoor',status:'available'},
   {id:3,cap:4,area:'Indoor',status:'available'},{id:4,cap:4,area:'Indoor',status:'available'},
   {id:5,cap:4,area:'Indoor',status:'available'},{id:6,cap:6,area:'Indoor',status:'available'},
@@ -706,8 +706,8 @@ let tables = JSON.parse(localStorage.getItem('mesa_tables') || 'null') || [
   {id:17,cap:50,area:'Banquet',status:'available'},
 ];
 
-let reservations = JSON.parse(localStorage.getItem('mesa_reservations') || 'null') || generateSampleData();
-let queue = JSON.parse(localStorage.getItem('mesa_queue') || '[]');
+let reservations = JSON.parse(localStorage.getItem('Saurav_reservations') || 'null') || generateSampleData();
+let queue = JSON.parse(localStorage.getItem('Saurav_queue') || '[]');
 let currentArea = 'Indoor';
 let calWeekOffset = 0;
 let editingResId = null;
@@ -745,9 +745,9 @@ function generateSampleData() {
 }
 
 function save() {
-  localStorage.setItem('mesa_tables', JSON.stringify(tables));
-  localStorage.setItem('mesa_reservations', JSON.stringify(reservations));
-  localStorage.setItem('mesa_queue', JSON.stringify(queue));
+  localStorage.setItem('Saurav_tables', JSON.stringify(tables));
+  localStorage.setItem('Saurav_reservations', JSON.stringify(reservations));
+  localStorage.setItem('Saurav_queue', JSON.stringify(queue));
 }
 
 // ========== NAVIGATION ==========
