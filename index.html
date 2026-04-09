@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mesa — Restaurant Management</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --bg2: #161616;
+    --bg3: #1e1e1e;
+    --bg4: #262626;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0ede8;
+    --text2: #9e9b96;
+    --text3: #5e5b57;
+    --accent: #e8c882;
+    --accent2: #c9a85c;
+    --green: #4caf7d;
+    --green-bg: rgba(76,175,125,0.12);
+    --red: #e05c5c;
+    --red-bg: rgba(224,92,92,0.12);
+    --blue: #5c9be0;
+    --blue-bg: rgba(92,155,224,0.12);
+    --amber: #e8a84c;
+    --amber-bg: rgba(232,168,76,0.12);
+    --purple: #9b7ee0;
+    --purple-bg: rgba(155,126,224,0.12);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --sidebar: 220px;
+    --font: 'DM Sans', sans-serif;
+    --serif: 'DM Serif Display', serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; display: flex; min-height: 100vh; overflow-x: hidden; }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: var(--sidebar); background: var(--bg2); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; position: fixed; height: 100vh; top: 0; left: 0; z-index: 100;
+    transition: transform .3s;
+  }
+  .logo { padding: 24px 20px 20px; border-bottom: 1px solid var(--border); }
+  .logo-word { font-family: var(--serif); font-size: 24px; color: var(--accent); letter-spacing: .5px; }
+  .logo-sub { font-size: 10px; color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px; }
+  .nav { padding: 16px 0; flex: 1; overflow-y: auto; }
+  .nav-section { padding: 8px 16px 4px; font-size: 10px; color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 9px 20px; cursor: pointer;
+    color: var(--text2); font-size: 13.5px; border-left: 2px solid transparent;
+    transition: all .15s; white-space: nowrap;
+  }
+  .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(232,200,130,0.06); }
+  .nav-icon { width: 16px; text-align: center; font-size: 15px; flex-shrink: 0; }
+  .nav-badge { margin-left: auto; background: var(--red); color: white; font-size: 10px; padding: 1px 6px; border-radius: 99px; font-weight: 600; }
+  .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); }
+  .time-display { font-size: 20px; font-weight: 300; color: var(--text); }
+  .date-display { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* MAIN */
+  #main { margin-left: var(--sidebar); flex: 1; min-height: 100vh; }
+  .topbar {
+    padding: 16px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center;
+    justify-content: space-between; background: var(--bg2); position: sticky; top: 0; z-index: 50;
+  }
+  .topbar-title { font-size: 17px; font-weight: 500; }
+  .topbar-actions { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    padding: 7px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border2);
+    background: var(--bg3); color: var(--text); font-family: var(--font); font-size: 13px;
+    cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 6px;
+  }
+  .btn:hover { background: var(--bg4); border-color: rgba(255,255,255,0.2); }
+  .btn-primary { background: var(--accent); color: #1a1400; border-color: var(--accent); font-weight: 600; }
+  .btn-primary:hover { background: #f0d494; border-color: #f0d494; }
+  .btn-danger { background: var(--red-bg); color: var(--red); border-color: rgba(224,92,92,0.3); }
+  .btn-success { background: var(--green-bg); color: var(--green); border-color: rgba(76,175,125,0.3); }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+  .page { display: none; padding: 28px; }
+  .page.active { display: block; }
+
+  /* CARDS */
+  .card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px; margin-bottom: 16px;
+  }
+  .card-title { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 20px; position: relative; overflow: hidden;
+  }
+  .stat-card::before { content:''; position:absolute; top:0; right:0; width:3px; height:100%; }
+  .stat-card.s-green::before { background: var(--green); }
+  .stat-card.s-amber::before { background: var(--amber); }
+  .stat-card.s-blue::before { background: var(--blue); }
+  .stat-card.s-red::before { background: var(--red); }
+  .stat-label { font-size: 11px; color: var(--text3); letter-spacing: .8px; text-transform: uppercase; margin-bottom: 8px; }
+  .stat-val { font-size: 28px; font-weight: 300; color: var(--text); line-height: 1; }
+  .stat-sub { font-size: 12px; color: var(--text2); margin-top: 6px; }
+
+  /* TABLE */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th { text-align: left; padding: 8px 12px; font-size: 11px; color: var(--text3); letter-spacing: .8px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+  .data-table td { padding: 11px 12px; border-bottom: 1px solid var(--border); font-size: 13.5px; color: var(--text2); vertical-align: middle; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: rgba(255,255,255,0.02); color: var(--text); }
+  .td-name { color: var(--text) !important; font-weight: 500; }
+
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 500; }
+  .badge-green { background: var(--green-bg); color: var(--green); }
+  .badge-red { background: var(--red-bg); color: var(--red); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber); }
+  .badge-blue { background: var(--blue-bg); color: var(--blue); }
+  .badge-purple { background: var(--purple-bg); color: var(--purple); }
+  .badge-gray { background: rgba(255,255,255,0.06); color: var(--text2); }
+
+  /* GRID LAYOUTS */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .main-side { display: grid; grid-template-columns: 1fr 320px; gap: 16px; }
+
+  /* FORMS */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1/-1; }
+  .form-label { font-size: 11px; color: var(--text3); letter-spacing: .8px; text-transform: uppercase; }
+  .form-input {
+    background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius-sm);
+    padding: 9px 12px; color: var(--text); font-family: var(--font); font-size: 13.5px;
+    transition: border .15s; outline: none;
+  }
+  .form-input:focus { border-color: var(--accent); }
+  .form-input option { background: var(--bg3); }
+  .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius);
+    padding: 24px; width: 540px; max-width: 95vw; max-height: 90vh; overflow-y: auto;
+  }
+  .modal-title { font-size: 17px; font-weight: 500; margin-bottom: 20px; display: flex; justify-content: space-between; }
+  .modal-close { cursor: pointer; color: var(--text3); font-size: 18px; line-height: 1; }
+  .modal-close:hover { color: var(--text); }
+
+  /* TABLE LAYOUT */
+  .table-layout {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 10px; padding: 4px;
+  }
+  .table-tile {
+    aspect-ratio: 1; border-radius: 10px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; cursor: pointer; transition: all .15s;
+    border: 1.5px solid var(--border); background: var(--bg3); position: relative;
+  }
+  .table-tile.available { border-color: var(--green); background: var(--green-bg); }
+  .table-tile.reserved { border-color: var(--amber); background: var(--amber-bg); }
+  .table-tile.occupied { border-color: var(--red); background: var(--red-bg); }
+  .table-tile.selected { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .table-tile .t-num { font-size: 16px; font-weight: 600; }
+  .table-tile .t-cap { font-size: 10px; color: var(--text3); }
+  .table-tile.available .t-num { color: var(--green); }
+  .table-tile.reserved .t-num { color: var(--amber); }
+  .table-tile.occupied .t-num { color: var(--red); }
+
+  /* QUEUE */
+  .queue-item {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 14px 16px; display: flex; align-items: center; gap: 14px; margin-bottom: 8px;
+    transition: all .2s;
+  }
+  .queue-num {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--bg4);
+    display: flex; align-items: center; justify-content: center; font-size: 13px;
+    font-weight: 600; color: var(--accent); flex-shrink: 0;
+  }
+  .queue-info { flex: 1; }
+  .queue-name { font-weight: 500; color: var(--text); font-size: 14px; }
+  .queue-meta { font-size: 12px; color: var(--text3); margin-top: 3px; }
+  .queue-wait { font-size: 13px; color: var(--amber); font-weight: 500; }
+  .queue-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  /* CALENDAR */
+  .cal-grid { display: grid; grid-template-columns: 70px repeat(7,1fr); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .cal-header { background: var(--bg3); padding: 10px; text-align: center; font-size: 11px; font-weight: 500; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
+  .cal-time { background: var(--bg3); padding: 8px; text-align: right; font-size: 11px; color: var(--text3); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .cal-cell { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); min-height: 48px; padding: 3px; position: relative; }
+  .cal-event {
+    border-radius: 4px; padding: 2px 5px; font-size: 10px; font-weight: 500;
+    margin-bottom: 2px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cal-event.indoor { background: var(--blue-bg); color: var(--blue); border-left: 2px solid var(--blue); }
+  .cal-event.outdoor { background: var(--green-bg); color: var(--green); border-left: 2px solid var(--green); }
+  .cal-event.banquet { background: var(--purple-bg); color: var(--purple); border-left: 2px solid var(--purple); }
+  .cal-event.vip { background: var(--amber-bg); color: var(--amber); border-left: 2px solid var(--amber); }
+
+  /* AVAILABILITY */
+  .slot-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(80px,1fr)); gap: 6px; }
+  .slot {
+    padding: 7px; text-align: center; border-radius: var(--radius-sm); font-size: 12px;
+    font-weight: 500; border: 1px solid var(--border); cursor: pointer; transition: all .15s;
+    color: var(--text2);
+  }
+  .slot.free { border-color: rgba(76,175,125,0.4); color: var(--green); background: var(--green-bg); }
+  .slot.busy { border-color: rgba(224,92,92,0.3); color: var(--text3); background: var(--red-bg); cursor: not-allowed; }
+  .slot.selected { background: var(--accent); color: #1a1400; border-color: var(--accent); }
+
+  /* TABS */
+  .tabs { display: flex; gap: 0; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 20px; }
+  .tab { padding: 8px 18px; font-size: 13px; cursor: pointer; color: var(--text2); transition: all .15s; background: transparent; border: none; font-family: var(--font); }
+  .tab:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+  .tab.active { background: var(--accent); color: #1a1400; font-weight: 600; }
+
+  /* NOTIF */
+  .notif-bar {
+    position: fixed; top: 20px; right: 20px; z-index: 9999;
+    display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+  }
+  .notif {
+    background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius-sm);
+    padding: 10px 16px; font-size: 13px; color: var(--text); pointer-events: all;
+    animation: slideIn .25s ease; display: flex; align-items: center; gap: 8px;
+    min-width: 260px; max-width: 340px;
+  }
+  .notif.success { border-color: rgba(76,175,125,0.5); }
+  .notif.error { border-color: rgba(224,92,92,0.5); }
+  @keyframes slideIn { from { opacity:0; transform: translateX(20px); } to { opacity:1; transform:none; } }
+
+  /* ANALYTICS */
+  .bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 80px; }
+  .bar { flex: 1; border-radius: 3px 3px 0 0; background: var(--accent); opacity: .7; transition: height .4s; min-height: 4px; }
+  .bar:hover { opacity: 1; }
+  .bar-labels { display: flex; gap: 4px; margin-top: 4px; }
+  .bar-label { flex: 1; text-align: center; font-size: 10px; color: var(--text3); }
+
+  /* TOGGLE */
+  .hamburger { display: none; background: none; border: none; color: var(--text); font-size: 20px; cursor: pointer; padding: 4px; }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    :root { --sidebar: 0px; }
+    #sidebar { transform: translateX(-220px); }
+    #sidebar.open { transform: none; --sidebar: 220px; }
+    #main { margin-left: 0; }
+    .hamburger { display: block; }
+    .stat-grid { grid-template-columns: 1fr 1fr; }
+    .two-col, .main-side { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .stat-grid { grid-template-columns: 1fr; }
+    .three-col { grid-template-columns: 1fr 1fr; }
+    .page { padding: 16px; }
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border2); }
+
+  .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .dot-green { background: var(--green); }
+  .dot-amber { background: var(--amber); }
+  .dot-red { background: var(--red); }
+  .dot-blue { background: var(--blue); }
+  .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .section-title { font-size: 15px; font-weight: 500; }
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text3); font-size: 13px; }
+  .empty-icon { font-size: 32px; margin-bottom: 10px; }
+  .highlight-row td { background: rgba(232,200,130,0.05) !important; }
+  .tag-list { display: flex; gap: 4px; flex-wrap: wrap; }
+  input[type=date], input[type=time] { color-scheme: dark; }
+  .progress-bar { height: 4px; background: var(--bg4); border-radius: 99px; overflow: hidden; margin-top: 6px; }
+  .progress-fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width .4s; }
+  .overlay-close { position: fixed; inset: 0; z-index: 99; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="logo">
+    <div class="logo-word">Mesa</div>
+    <div class="logo-sub">Restaurant Manager</div>
+  </div>
+  <div class="nav">
+    <div class="nav-section">Overview</div>
+    <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="nav-icon">⊞</span> Dashboard</div>
+    <div class="nav-item" onclick="showPage('calendar',this)"><span class="nav-icon">◫</span> Calendar</div>
+    <div class="nav-item" onclick="showPage('analytics',this)"><span class="nav-icon">↗</span> Analytics</div>
+    <div class="nav-section" style="margin-top:8px">Operations</div>
+    <div class="nav-item" onclick="showPage('queue',this)" id="nav-queue"><span class="nav-icon">◎</span> Queue <span class="nav-badge" id="queue-badge">0</span></div>
+    <div class="nav-item" onclick="showPage('reservations',this)"><span class="nav-icon">◈</span> Reservations</div>
+    <div class="nav-item" onclick="showPage('availability',this)"><span class="nav-icon">⊕</span> Availability</div>
+    <div class="nav-section" style="margin-top:8px">Setup</div>
+    <div class="nav-item" onclick="showPage('tables',this)"><span class="nav-icon">⊟</span> Tables & Areas</div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="time-display" id="live-time">--:--</div>
+    <div class="date-display" id="live-date"></div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div id="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <span class="topbar-title" id="page-title">Dashboard</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-primary" onclick="openNewReservation()">+ Reservation</button>
+      <button class="btn" onclick="openQueueAdd()">+ Walk-in</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="stat-grid">
+      <div class="stat-card s-green">
+        <div class="stat-label">Today's Reservations</div>
+        <div class="stat-val" id="stat-today">0</div>
+        <div class="stat-sub">Confirmed bookings</div>
+      </div>
+      <div class="stat-card s-amber">
+        <div class="stat-label">Tables Available</div>
+        <div class="stat-val" id="stat-avail">0</div>
+        <div class="stat-sub" id="stat-avail-sub">of 0 tables</div>
+      </div>
+      <div class="stat-card s-red">
+        <div class="stat-label">Waiting Queue</div>
+        <div class="stat-val" id="stat-queue">0</div>
+        <div class="stat-sub">Walk-in guests</div>
+      </div>
+      <div class="stat-card s-blue">
+        <div class="stat-label">VIP / Special</div>
+        <div class="stat-val" id="stat-vip">0</div>
+        <div class="stat-sub">Priority today</div>
+      </div>
+    </div>
+
+    <div class="main-side">
+      <div>
+        <div class="card">
+          <div class="section-head">
+            <span class="section-title">Today's Schedule</span>
+            <span style="font-size:12px;color:var(--text3)" id="dash-today-label"></span>
+          </div>
+          <table class="data-table" id="today-table">
+            <thead><tr><th>Time</th><th>Guest</th><th>Guests</th><th>Area</th><th>Table</th><th>Tags</th><th>Actions</th></tr></thead>
+            <tbody id="today-tbody"></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="section-head">
+            <span class="section-title">Upcoming This Week</span>
+            <select class="form-input" style="width:auto;padding:4px 8px;font-size:12px" onchange="renderUpcoming(this.value)">
+              <option value="all">All Areas</option>
+              <option value="Indoor">Indoor</option>
+              <option value="Outdoor">Outdoor</option>
+              <option value="Banquet">Banquet</option>
+            </select>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>Date</th><th>Time</th><th>Guest</th><th>Area</th><th>Tags</th></tr></thead>
+            <tbody id="upcoming-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="section-title" style="margin-bottom:14px">Live Table Status</div>
+          <div class="table-layout" id="dash-table-layout"></div>
+          <div style="display:flex;gap:12px;margin-top:14px;flex-wrap:wrap">
+            <span style="font-size:11px;display:flex;align-items:center;gap:4px;color:var(--text3)"><span class="dot dot-green"></span>Available</span>
+            <span style="font-size:11px;display:flex;align-items:center;gap:4px;color:var(--text3)"><span class="dot dot-amber"></span>Reserved</span>
+            <span style="font-size:11px;display:flex;align-items:center;gap:4px;color:var(--text3)"><span class="dot dot-red"></span>Occupied</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-title" style="margin-bottom:14px">Queue Preview</div>
+          <div id="dash-queue"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUEUE -->
+  <div class="page" id="page-queue">
+    <div class="main-side">
+      <div>
+        <div class="card">
+          <div class="section-head">
+            <span class="section-title">Waiting Queue</span>
+            <span class="badge badge-amber" id="queue-count-badge">0 waiting</span>
+          </div>
+          <div id="queue-list"></div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="section-title" style="margin-bottom:16px">Add Walk-in Guest</div>
+          <div class="form-group">
+            <label class="form-label">Guest Name</label>
+            <input class="form-input" id="q-name" placeholder="Enter name">
+          </div>
+          <div class="form-group" style="margin-top:10px">
+            <label class="form-label">Number of Guests</label>
+            <input class="form-input" id="q-guests" type="number" min="1" max="20" value="2">
+          </div>
+          <div class="form-group" style="margin-top:10px">
+            <label class="form-label">Phone (optional)</label>
+            <input class="form-input" id="q-phone" placeholder="+91 ...">
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="addToQueue()">Add to Queue</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-title" style="margin-bottom:10px">Queue Metrics</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--text3)">Avg wait time</span><span id="avg-wait" style="color:var(--amber)">-- min</span></div><div class="progress-bar"><div class="progress-fill" id="wait-bar" style="width:0%"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--text3)">Table turnover</span><span style="color:var(--green)">~45 min</span></div><div class="progress-bar"><div class="progress-fill" style="width:55%;background:var(--green)"></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESERVATIONS -->
+  <div class="page" id="page-reservations">
+    <div class="card">
+      <div class="section-head">
+        <span class="section-title">All Reservations</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="form-input" id="res-search" placeholder="Search guest..." style="width:200px" oninput="renderReservations()">
+          <select class="form-input" id="res-filter-area" style="width:auto" onchange="renderReservations()">
+            <option value="">All Areas</option>
+            <option>Indoor</option><option>Outdoor</option><option>Banquet</option>
+          </select>
+          <button class="btn btn-primary" onclick="openNewReservation()">+ New</button>
+        </div>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Date</th><th>Time</th><th>Guest</th><th>Phone</th><th>Guests</th><th>Area</th><th>Table</th><th>Tags</th><th>Actions</th></tr></thead>
+        <tbody id="res-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- AVAILABILITY -->
+  <div class="page" id="page-availability">
+    <div class="two-col">
+      <div class="card">
+        <div class="section-title" style="margin-bottom:16px">Check Availability</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input class="form-input" type="date" id="av-date" onchange="checkAvailability()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Time</label>
+            <input class="form-input" type="time" id="av-time" onchange="checkAvailability()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Area</label>
+            <select class="form-input" id="av-area" onchange="checkAvailability()">
+              <option value="">All Areas</option>
+              <option>Indoor</option><option>Outdoor</option><option>Banquet</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Guests</label>
+            <input class="form-input" type="number" id="av-guests" min="1" value="2" onchange="checkAvailability()">
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title" style="margin-bottom:14px">Available Time Slots</div>
+        <div class="slot-grid" id="av-slots"></div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <div class="section-title" style="margin-bottom:14px">Available Tables</div>
+        <div class="table-layout" id="av-tables"></div>
+        <div id="av-suggestion" style="margin-top:12px;font-size:13px;color:var(--accent)"></div>
+      </div>
+      <div class="card">
+        <div class="section-title" style="margin-bottom:14px">Already Booked</div>
+        <table class="data-table">
+          <thead><tr><th>Table</th><th>Guest</th><th>Time</th><th>Area</th></tr></thead>
+          <tbody id="av-booked-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div class="page" id="page-calendar">
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <button class="btn" onclick="calNav(-1)">← Prev</button>
+        <span id="cal-range" style="font-size:15px;font-weight:500;flex:1;text-align:center"></span>
+        <button class="btn" onclick="calNav(1)">Next →</button>
+        <select class="form-input" id="cal-filter" style="width:auto" onchange="renderCalendar()">
+          <option value="">All Areas</option>
+          <option>Indoor</option><option>Outdoor</option><option>Banquet</option>
+        </select>
+      </div>
+    </div>
+    <div class="card" style="overflow-x:auto;padding:0">
+      <div id="cal-grid"></div>
+    </div>
+    <div id="cal-day-detail" style="margin-top:16px;display:none">
+      <div class="card">
+        <div class="section-head">
+          <span class="section-title" id="cal-detail-title">Day Detail</span>
+          <button class="btn btn-sm" onclick="document.getElementById('cal-day-detail').style.display='none'">✕</button>
+        </div>
+        <div id="cal-detail-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLES & AREAS -->
+  <div class="page" id="page-tables">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('indoor',this)">Indoor</button>
+      <button class="tab" onclick="switchTab('outdoor',this)">Outdoor</button>
+      <button class="tab" onclick="switchTab('banquet',this)">Banquet</button>
+    </div>
+    <div class="main-side">
+      <div>
+        <div class="card">
+          <div class="section-head">
+            <span class="section-title" id="area-tab-title">Indoor Tables</span>
+            <div style="display:flex;gap:6px">
+              <span class="badge badge-green" id="area-avail-count">0 available</span>
+              <span class="badge badge-amber" id="area-res-count">0 reserved</span>
+            </div>
+          </div>
+          <div class="table-layout" id="area-layout" style="grid-template-columns: repeat(auto-fill,minmax(90px,1fr))"></div>
+        </div>
+        <div class="card">
+          <div class="section-title" style="margin-bottom:14px">Today's Bookings for Area</div>
+          <table class="data-table"><thead><tr><th>Table</th><th>Guest</th><th>Time</th><th>Guests</th><th>Status</th></tr></thead><tbody id="area-bookings-tbody"></tbody></table>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="section-title" style="margin-bottom:14px">Table Details</div>
+          <div id="table-detail-panel"><div class="empty-state"><div class="empty-icon">◫</div><div>Click a table to view details</div></div></div>
+        </div>
+        <div class="card">
+          <div class="section-title" style="margin-bottom:14px">Mark Table Status</div>
+          <div class="form-group"><label class="form-label">Table</label><input class="form-input" id="status-table" placeholder="Table number" readonly></div>
+          <div class="form-group" style="margin-top:10px"><label class="form-label">Status</label>
+            <select class="form-input" id="status-val">
+              <option value="available">Available</option>
+              <option value="reserved">Reserved</option>
+              <option value="occupied">Occupied</option>
+            </select>
+          </div>
+          <div class="form-actions"><button class="btn btn-primary" onclick="updateTableStatus()">Update Status</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANALYTICS -->
+  <div class="page" id="page-analytics">
+    <div class="stat-grid">
+      <div class="stat-card s-green">
+        <div class="stat-label">Total Reservations</div>
+        <div class="stat-val" id="an-total">0</div>
+        <div class="stat-sub">All time</div>
+      </div>
+      <div class="stat-card s-amber">
+        <div class="stat-label">VIP Guests</div>
+        <div class="stat-val" id="an-vip">0</div>
+        <div class="stat-sub">Total VIP bookings</div>
+      </div>
+      <div class="stat-card s-blue">
+        <div class="stat-label">Avg Party Size</div>
+        <div class="stat-val" id="an-avg">0</div>
+        <div class="stat-sub">Guests per booking</div>
+      </div>
+      <div class="stat-card s-red">
+        <div class="stat-label">Banquet Events</div>
+        <div class="stat-val" id="an-banquet">0</div>
+        <div class="stat-sub">Large group bookings</div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Bookings by Day of Week</div>
+        <div class="bar-chart" id="dow-chart"></div>
+        <div class="bar-labels" id="dow-labels"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Bookings by Area</div>
+        <div id="area-breakdown" style="display:flex;flex-direction:column;gap:10px;margin-top:6px"></div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Peak Hours</div>
+        <div class="bar-chart" id="hour-chart"></div>
+        <div class="bar-labels" id="hour-labels"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Tag Distribution</div>
+        <div id="tag-breakdown" style="display:flex;flex-direction:column;gap:10px;margin-top:6px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<!-- Reservation Modal -->
+<div class="modal-overlay" id="modal-reservation">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="modal-res-title">New Reservation</span>
+      <span class="modal-close" onclick="closeModal('modal-reservation')">✕</span>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Guest Name *</label><input class="form-input" id="r-name" placeholder="Full name"></div>
+      <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="r-phone" placeholder="+91 ..."></div>
+      <div class="form-group"><label class="form-label">Date *</label><input class="form-input" type="date" id="r-date" onchange="updateTableOptions()"></div>
+      <div class="form-group"><label class="form-label">Time *</label><input class="form-input" type="time" id="r-time" onchange="updateTableOptions()"></div>
+      <div class="form-group"><label class="form-label">Guests *</label><input class="form-input" type="number" id="r-guests" min="1" max="50" value="2" onchange="updateTableOptions()"></div>
+      <div class="form-group"><label class="form-label">Area *</label>
+        <select class="form-input" id="r-area" onchange="updateTableOptions()">
+          <option>Indoor</option><option>Outdoor</option><option>Banquet</option>
+        </select>
+      </div>
+      <div class="form-group full"><label class="form-label">Table *</label>
+        <select class="form-input" id="r-table"><option value="">— Select table —</option></select>
+        <span style="font-size:11px;color:var(--accent);margin-top:4px" id="auto-suggest-msg"></span>
+      </div>
+      <div class="form-group full"><label class="form-label">Tags</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="tag-checkboxes"></div>
+      </div>
+      <div class="form-group full"><label class="form-label">Special Notes</label><textarea class="form-input" id="r-notes" rows="2" placeholder="Birthday, dietary needs, special request..."></textarea></div>
+    </div>
+    <input type="hidden" id="r-edit-id">
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-reservation')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveReservation()">Save Reservation</button>
+    </div>
+  </div>
+</div>
+
+<!-- Seat Guest Modal -->
+<div class="modal-overlay" id="modal-seat">
+  <div class="modal" style="width:400px">
+    <div class="modal-title">
+      <span>Seat Guest</span>
+      <span class="modal-close" onclick="closeModal('modal-seat')">✕</span>
+    </div>
+    <div id="seat-guest-info" style="margin-bottom:16px;padding:14px;background:var(--bg3);border-radius:var(--radius-sm)"></div>
+    <div class="form-group">
+      <label class="form-label">Assign Table</label>
+      <select class="form-input" id="seat-table-select"><option value="">— Select —</option></select>
+    </div>
+    <input type="hidden" id="seat-queue-id">
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-seat')">Cancel</button>
+      <button class="btn btn-success" onclick="seatGuest()">Seat Guest</button>
+    </div>
+  </div>
+</div>
+
+<!-- Notifications -->
+<div class="notif-bar" id="notif-bar"></div>
+
+<script>
+// ========== DATA STORE ==========
+const TAGS = ['VIP', 'Birthday', 'Anniversary', 'Special Request', 'Large Party'];
+const AREAS = ['Indoor', 'Outdoor', 'Banquet'];
+
+let tables = JSON.parse(localStorage.getItem('mesa_tables') || 'null') || [
+  {id:1,cap:2,area:'Indoor',status:'available'},{id:2,cap:2,area:'Indoor',status:'available'},
+  {id:3,cap:4,area:'Indoor',status:'available'},{id:4,cap:4,area:'Indoor',status:'available'},
+  {id:5,cap:4,area:'Indoor',status:'available'},{id:6,cap:6,area:'Indoor',status:'available'},
+  {id:7,cap:6,area:'Indoor',status:'available'},{id:8,cap:8,area:'Indoor',status:'available'},
+  {id:9,cap:2,area:'Outdoor',status:'available'},{id:10,cap:2,area:'Outdoor',status:'available'},
+  {id:11,cap:4,area:'Outdoor',status:'available'},{id:12,cap:4,area:'Outdoor',status:'available'},
+  {id:13,cap:6,area:'Outdoor',status:'available'},{id:14,cap:8,area:'Outdoor',status:'available'},
+  {id:15,cap:20,area:'Banquet',status:'available'},{id:16,cap:30,area:'Banquet',status:'available'},
+  {id:17,cap:50,area:'Banquet',status:'available'},
+];
+
+let reservations = JSON.parse(localStorage.getItem('mesa_reservations') || 'null') || generateSampleData();
+let queue = JSON.parse(localStorage.getItem('mesa_queue') || '[]');
+let currentArea = 'Indoor';
+let calWeekOffset = 0;
+let editingResId = null;
+let selectedTableTile = null;
+
+function generateSampleData() {
+  const today = new Date();
+  const fmt = d => d.toISOString().slice(0,10);
+  const data = [];
+  const names = ['Priya Sharma','Rohan Mehta','Ananya Patel','Vikram Singh','Neha Joshi','Arjun Gupta','Kavya Reddy','Siddharth Nair'];
+  let id = 1;
+  for(let d=0;d<7;d++){
+    const dt = new Date(today); dt.setDate(today.getDate()+d);
+    const count = 2+Math.floor(Math.random()*4);
+    for(let i=0;i<count;i++){
+      const h = 12+Math.floor(Math.random()*8);
+      const m = [0,30][Math.floor(Math.random()*2)];
+      const time = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+      const area = AREAS[Math.floor(Math.random()*AREAS.length)];
+      const areaTables = tables.filter(t=>t.area===area);
+      const table = areaTables[Math.floor(Math.random()*areaTables.length)];
+      const guests = Math.floor(Math.random()*8)+1;
+      const tags = [];
+      if(Math.random()<0.2) tags.push('VIP');
+      if(Math.random()<0.15) tags.push('Birthday');
+      if(Math.random()<0.1) tags.push('Anniversary');
+      data.push({
+        id: id++, name: names[Math.floor(Math.random()*names.length)],
+        phone: `+91 98${Math.floor(10000000+Math.random()*89999999)}`,
+        date: fmt(dt), time, guests, area, tableId: table.id, tags, notes: '',
+      });
+    }
+  }
+  return data;
+}
+
+function save() {
+  localStorage.setItem('mesa_tables', JSON.stringify(tables));
+  localStorage.setItem('mesa_reservations', JSON.stringify(reservations));
+  localStorage.setItem('mesa_queue', JSON.stringify(queue));
+}
+
+// ========== NAVIGATION ==========
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  const titles = {dashboard:'Dashboard',queue:'Waiting Queue',reservations:'Reservations',
+    availability:'Smart Availability',calendar:'Calendar View',tables:'Tables & Areas',analytics:'Analytics'};
+  document.getElementById('page-title').textContent = titles[id] || id;
+  if(id==='dashboard') renderDashboard();
+  if(id==='queue') renderQueue();
+  if(id==='reservations') renderReservations();
+  if(id==='availability') initAvailability();
+  if(id==='calendar') renderCalendar();
+  if(id==='tables') renderAreaTables();
+  if(id==='analytics') renderAnalytics();
+  if(window.innerWidth<900) document.getElementById('sidebar').classList.remove('open');
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ========== CLOCK ==========
+function updateClock() {
+  const now = new Date();
+  document.getElementById('live-time').textContent = now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('live-date').textContent = now.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
+}
+setInterval(updateClock,1000); updateClock();
+
+// ========== NOTIFICATIONS ==========
+function notify(msg, type='success') {
+  const bar = document.getElementById('notif-bar');
+  const el = document.createElement('div');
+  el.className = `notif ${type}`;
+  const icon = type==='success'?'✓':type==='error'?'✕':'ℹ';
+  el.innerHTML = `<span style="color:var(--${type==='success'?'green':type==='error'?'red':'amber'})">${icon}</span> ${msg}`;
+  bar.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);},3000);
+}
+
+// ========== DASHBOARD ==========
+function renderDashboard() {
+  const today = new Date().toISOString().slice(0,10);
+  const todayRes = reservations.filter(r=>r.date===today);
+  const avail = tables.filter(t=>t.status==='available').length;
+  const vip = todayRes.filter(r=>r.tags.includes('VIP')).length;
+  document.getElementById('stat-today').textContent = todayRes.length;
+  document.getElementById('stat-avail').textContent = avail;
+  document.getElementById('stat-avail-sub').textContent = `of ${tables.length} tables`;
+  document.getElementById('stat-queue').textContent = queue.length;
+  document.getElementById('stat-vip').textContent = vip;
+  document.getElementById('dash-today-label').textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+
+  const tbody = document.getElementById('today-tbody');
+  tbody.innerHTML = '';
+  todayRes.sort((a,b)=>a.time.localeCompare(b.time)).forEach(r=>{
+    const isVip = r.tags.includes('VIP');
+    const tr = document.createElement('tr');
+    if(isVip) tr.className='highlight-row';
+    tr.innerHTML = `<td>${r.time}</td><td class="td-name">${r.name}</td><td>${r.guests}</td>
+      <td><span class="badge ${areaBadge(r.area)}">${r.area}</span></td>
+      <td>T${r.tableId}</td>
+      <td><div class="tag-list">${r.tags.map(t=>`<span class="badge ${tagBadge(t)}">${t}</span>`).join('')}</div></td>
+      <td><button class="btn btn-sm" onclick="editRes(${r.id})">Edit</button></td>`;
+    tbody.appendChild(tr);
+  });
+  if(!todayRes.length) tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">◫</div>No reservations today</div></td></tr>';
+
+  renderUpcoming('all');
+  renderDashTableLayout();
+  renderDashQueue();
+}
+
+function renderUpcoming(areaFilter) {
+  const today = new Date().toISOString().slice(0,10);
+  let upcoming = reservations.filter(r=>r.date>today);
+  if(areaFilter && areaFilter!=='all') upcoming = upcoming.filter(r=>r.area===areaFilter);
+  upcoming.sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
+  const tbody = document.getElementById('upcoming-tbody');
+  tbody.innerHTML = '';
+  upcoming.slice(0,10).forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${fmtDate(r.date)}</td><td>${r.time}</td><td class="td-name">${r.name}</td>
+      <td><span class="badge ${areaBadge(r.area)}">${r.area}</span></td>
+      <td><div class="tag-list">${r.tags.map(t=>`<span class="badge ${tagBadge(t)}">${t}</span>`).join('')}</div></td>`;
+    tbody.appendChild(tr);
+  });
+  if(!upcoming.length) tbody.innerHTML='<tr><td colspan="5"><div class="empty-state">No upcoming reservations</div></td></tr>';
+}
+
+function renderDashTableLayout() {
+  const el = document.getElementById('dash-table-layout');
+  el.innerHTML = '';
+  tables.forEach(t=>{
+    const div = document.createElement('div');
+    div.className = `table-tile ${t.status}`;
+    div.innerHTML = `<div class="t-num">T${t.id}</div><div class="t-cap">${t.cap} pax</div>`;
+    el.appendChild(div);
+  });
+}
+
+function renderDashQueue() {
+  const el = document.getElementById('dash-queue');
+  if(!queue.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">◎</div>No guests waiting</div>';return;}
+  el.innerHTML = '';
+  queue.slice(0,4).forEach((g,i)=>{
+    const wait = calcWait(i);
+    el.innerHTML += `<div class="queue-item">
+      <div class="queue-num">${i+1}</div>
+      <div class="queue-info">
+        <div class="queue-name">${g.name}</div>
+        <div class="queue-meta">${g.guests} guests · Arrived ${g.arrivalTime}</div>
+      </div>
+      <div class="queue-wait">~${wait}m</div>
+    </div>`;
+  });
+}
+
+// ========== QUEUE ==========
+function renderQueue() {
+  const el = document.getElementById('queue-list');
+  const badge = document.getElementById('queue-count-badge');
+  const navBadge = document.getElementById('queue-badge');
+  badge.textContent = `${queue.length} waiting`;
+  navBadge.textContent = queue.length;
+  updateQueueBadge();
+
+  if(!queue.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">◎</div><div>Queue is empty — all guests are seated!</div></div>';return;}
+  el.innerHTML = '';
+  queue.forEach((g,i)=>{
+    const wait = calcWait(i);
+    el.innerHTML += `<div class="queue-item">
+      <div class="queue-num">${i+1}</div>
+      <div class="queue-info">
+        <div class="queue-name">${g.name} <span style="font-size:12px;color:var(--text3)">· ${g.guests} guests</span></div>
+        <div class="queue-meta">${g.phone||'No phone'} · Arrived ${g.arrivalTime}</div>
+      </div>
+      <div style="flex:1"></div>
+      <div class="queue-wait">~${wait} min</div>
+      <div class="queue-actions">
+        <button class="btn btn-success btn-sm" onclick="openSeatGuest(${g.id})">Seat</button>
+        <button class="btn btn-danger btn-sm" onclick="removeFromQueue(${g.id})">✕</button>
+      </div>
+    </div>`;
+  });
+
+  const avg = queue.length ? calcWait(Math.floor(queue.length/2)) : 0;
+  document.getElementById('avg-wait').textContent = avg+' min';
+  document.getElementById('wait-bar').style.width = Math.min(avg/60*100,100)+'%';
+}
+
+function calcWait(pos) { return (pos+1)*15; }
+
+function addToQueue() {
+  const name = document.getElementById('q-name').value.trim();
+  const guests = parseInt(document.getElementById('q-guests').value)||1;
+  const phone = document.getElementById('q-phone').value.trim();
+  if(!name){notify('Enter guest name','error');return;}
+  const now = new Date();
+  const time = now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  queue.push({id:Date.now(),name,guests,phone,arrivalTime:time});
+  save();
+  document.getElementById('q-name').value='';
+  document.getElementById('q-phone').value='';
+  document.getElementById('q-guests').value='2';
+  renderQueue();
+  updateQueueBadge();
+  notify(`${name} added to queue`);
+}
+
+function openQueueAdd(){showPage('queue',document.querySelector('.nav-item:nth-of-type(5)'));}
+
+function removeFromQueue(id) {
+  queue = queue.filter(g=>g.id!==id);
+  save(); renderQueue(); updateQueueBadge();
+  notify('Guest removed from queue','error');
+}
+
+function openSeatGuest(id) {
+  const g = queue.find(x=>x.id===id); if(!g)return;
+  document.getElementById('seat-guest-info').innerHTML = `
+    <div style="font-weight:500;font-size:15px;margin-bottom:6px">${g.name}</div>
+    <div style="font-size:13px;color:var(--text3)">${g.guests} guests · Arrived ${g.arrivalTime}</div>`;
+  document.getElementById('seat-queue-id').value = id;
+  const sel = document.getElementById('seat-table-select');
+  sel.innerHTML = '<option value="">— Select table —</option>';
+  tables.filter(t=>t.status==='available'&&t.cap>=g.guests).forEach(t=>{
+    sel.innerHTML += `<option value="${t.id}">Table ${t.id} (${t.cap} pax, ${t.area})</option>`;
+  });
+  openModal('modal-seat');
+}
+
+function seatGuest() {
+  const qid = parseInt(document.getElementById('seat-queue-id').value);
+  const tid = parseInt(document.getElementById('seat-table-select').value);
+  if(!tid){notify('Select a table','error');return;}
+  const g = queue.find(x=>x.id===qid);
+  const t = tables.find(x=>x.id===tid);
+  if(t) t.status='occupied';
+  queue = queue.filter(x=>x.id!==qid);
+  save(); closeModal('modal-seat'); renderQueue(); updateQueueBadge();
+  notify(`${g.name} seated at Table ${tid}`);
+}
+
+function updateQueueBadge() {
+  document.getElementById('queue-badge').textContent = queue.length;
+  document.getElementById('stat-queue').textContent = queue.length;
+}
+
+// ========== RESERVATIONS ==========
+function renderReservations() {
+  const search = document.getElementById('res-search').value.toLowerCase();
+  const areaF = document.getElementById('res-filter-area').value;
+  let data = reservations.filter(r=>
+    (!search || r.name.toLowerCase().includes(search) || r.phone.includes(search)) &&
+    (!areaF || r.area===areaF)
+  ).sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
+
+  const tbody = document.getElementById('res-tbody');
+  tbody.innerHTML = '';
+  data.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${fmtDate(r.date)}</td><td>${r.time}</td><td class="td-name">${r.name}</td>
+      <td style="color:var(--text3)">${r.phone}</td><td>${r.guests}</td>
+      <td><span class="badge ${areaBadge(r.area)}">${r.area}</span></td>
+      <td>T${r.tableId}</td>
+      <td><div class="tag-list">${r.tags.map(t=>`<span class="badge ${tagBadge(t)}">${t}</span>`).join('')}</div></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-sm" onclick="editRes(${r.id})">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteRes(${r.id})" style="margin-left:4px">Del</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  if(!data.length) tbody.innerHTML='<tr><td colspan="9"><div class="empty-state">No reservations found</div></td></tr>';
+}
+
+function deleteRes(id) {
+  if(!confirm('Delete this reservation?')) return;
+  reservations = reservations.filter(r=>r.id!==id);
+  save(); renderReservations(); notify('Reservation deleted','error');
+}
+
+function editRes(id) {
+  const r = reservations.find(x=>x.id===id); if(!r)return;
+  editingResId = id;
+  document.getElementById('modal-res-title').textContent = 'Edit Reservation';
+  document.getElementById('r-name').value = r.name;
+  document.getElementById('r-phone').value = r.phone;
+  document.getElementById('r-date').value = r.date;
+  document.getElementById('r-time').value = r.time;
+  document.getElementById('r-guests').value = r.guests;
+  document.getElementById('r-area').value = r.area;
+  document.getElementById('r-notes').value = r.notes||'';
+  buildTagCheckboxes(r.tags);
+  updateTableOptions(r.tableId);
+  openModal('modal-reservation');
+}
+
+function openNewReservation() {
+  editingResId = null;
+  document.getElementById('modal-res-title').textContent = 'New Reservation';
+  document.getElementById('r-name').value='';
+  document.getElementById('r-phone').value='';
+  const now = new Date();
+  document.getElementById('r-date').value = now.toISOString().slice(0,10);
+  document.getElementById('r-time').value = '';
+  document.getElementById('r-guests').value = '2';
+  document.getElementById('r-area').value = 'Indoor';
+  document.getElementById('r-notes').value = '';
+  buildTagCheckboxes([]);
+  updateTableOptions();
+  openModal('modal-reservation');
+}
+
+function buildTagCheckboxes(selected=[]) {
+  const c = document.getElementById('tag-checkboxes');
+  c.innerHTML = '';
+  TAGS.forEach(t=>{
+    const id='tag_'+t.replace(/\s/g,'_');
+    const checked = selected.includes(t);
+    c.innerHTML += `<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px;color:var(--text2)">
+      <input type="checkbox" id="${id}" value="${t}" ${checked?'checked':''} style="accent-color:var(--accent);cursor:pointer"> ${t}</label>`;
+  });
+}
+
+function getSelectedTags() {
+  return TAGS.filter(t=>document.getElementById('tag_'+t.replace(/\s/g,'_'))?.checked);
+}
+
+function updateTableOptions(keepId=null) {
+  const date = document.getElementById('r-date').value;
+  const time = document.getElementById('r-time').value;
+  const area = document.getElementById('r-area').value;
+  const guests = parseInt(document.getElementById('r-guests').value)||1;
+  const sel = document.getElementById('r-table');
+  sel.innerHTML = '<option value="">— Select table —</option>';
+  const msg = document.getElementById('auto-suggest-msg');
+
+  tables.filter(t=>t.area===area&&t.cap>=guests).forEach(t=>{
+    const conflict = reservations.some(r=>
+      r.tableId===t.id && r.date===date && r.time===time && r.id!==editingResId
+    );
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.textContent = `Table ${t.id} (${t.cap} pax)${conflict?' — BOOKED':''}`;
+    opt.disabled = conflict;
+    if(keepId&&t.id===keepId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  // Auto suggest
+  if(date&&time) {
+    const suggest = tables.find(t=>t.area===area&&t.cap>=guests&&!reservations.some(r=>r.tableId===t.id&&r.date===date&&r.time===time&&r.id!==editingResId));
+    if(suggest) {
+      msg.textContent = `★ Suggested: Table ${suggest.id} (${suggest.cap} pax)`;
+      if(!keepId) sel.value = suggest.id;
+    } else { msg.textContent='No available tables for this slot'; }
+  }
+}
+
+function saveReservation() {
+  const name = document.getElementById('r-name').value.trim();
+  const phone = document.getElementById('r-phone').value.trim();
+  const date = document.getElementById('r-date').value;
+  const time = document.getElementById('r-time').value;
+  const guests = parseInt(document.getElementById('r-guests').value)||1;
+  const area = document.getElementById('r-area').value;
+  const tableId = parseInt(document.getElementById('r-table').value);
+  const tags = getSelectedTags();
+  const notes = document.getElementById('r-notes').value.trim();
+
+  if(!name){notify('Enter guest name','error');return;}
+  if(!date){notify('Select a date','error');return;}
+  if(!time){notify('Select a time','error');return;}
+  if(!tableId){notify('Select a table','error');return;}
+
+  // Conflict check
+  const conflict = reservations.find(r=>r.tableId===tableId&&r.date===date&&r.time===time&&r.id!==editingResId);
+  if(conflict){notify(`Table ${tableId} is already booked at this time!`,'error');return;}
+
+  if(editingResId) {
+    const r = reservations.find(x=>x.id===editingResId);
+    Object.assign(r,{name,phone,date,time,guests,area,tableId,tags,notes});
+    notify('Reservation updated');
+  } else {
+    reservations.push({id:Date.now(),name,phone,date,time,guests,area,tableId,tags,notes});
+    notify(`Reservation saved for ${name}`);
+  }
+  save();
+  closeModal('modal-reservation');
+  renderReservations();
+  renderDashboard();
+}
+
+// ========== AVAILABILITY ==========
+function initAvailability() {
+  const now = new Date();
+  document.getElementById('av-date').value = now.toISOString().slice(0,10);
+  document.getElementById('av-time').value = now.toTimeString().slice(0,5);
+  checkAvailability();
+}
+
+function checkAvailability() {
+  const date = document.getElementById('av-date').value;
+  const time = document.getElementById('av-time').value;
+  const area = document.getElementById('av-area').value;
+  const guests = parseInt(document.getElementById('av-guests').value)||1;
+
+  // Time slots
+  const slots = ['11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00'];
+  const slotEl = document.getElementById('av-slots');
+  slotEl.innerHTML = '';
+  slots.forEach(s=>{
+    const booked = reservations.some(r=>r.date===date&&r.time===s&&(!area||r.area===area));
+    const div = document.createElement('div');
+    div.className = `slot ${booked?'busy':'free'} ${s===time?'selected':''}`;
+    div.textContent = s;
+    if(!booked) div.onclick=()=>{document.getElementById('av-time').value=s;document.querySelectorAll('.slot').forEach(x=>x.classList.remove('selected'));div.classList.add('selected');checkAvailability();};
+    slotEl.appendChild(div);
+  });
+
+  // Tables
+  const tableEl = document.getElementById('av-tables');
+  tableEl.innerHTML = '';
+  let availTables = tables.filter(t=>!area||t.area===area);
+  availTables.forEach(t=>{
+    const booked = reservations.some(r=>r.tableId===t.id&&r.date===date&&r.time===time);
+    const div = document.createElement('div');
+    div.className = `table-tile ${booked?'reserved':(t.status==='occupied'?'occupied':'available')}`;
+    div.innerHTML = `<div class="t-num">T${t.id}</div><div class="t-cap">${t.cap} pax</div><div style="font-size:9px;margin-top:2px;color:var(--text3)">${t.area}</div>`;
+    tableEl.appendChild(div);
+  });
+
+  const suggest = availTables.find(t=>t.cap>=guests&&!reservations.some(r=>r.tableId===t.id&&r.date===date&&r.time===time)&&t.status!=='occupied');
+  document.getElementById('av-suggestion').textContent = suggest ? `★ Best table: T${suggest.id} (${suggest.cap} pax, ${suggest.area})` : '';
+
+  // Booked tables
+  const bookedRes = reservations.filter(r=>r.date===date&&(!area||r.area===area));
+  const tbody = document.getElementById('av-booked-tbody');
+  tbody.innerHTML = '';
+  bookedRes.forEach(r=>{
+    tbody.innerHTML += `<tr><td>T${r.tableId}</td><td class="td-name">${r.name}</td><td>${r.time}</td><td><span class="badge ${areaBadge(r.area)}">${r.area}</span></td></tr>`;
+  });
+  if(!bookedRes.length) tbody.innerHTML='<tr><td colspan="4"><div class="empty-state" style="padding:20px">No bookings for this day</div></td></tr>';
+}
+
+// ========== CALENDAR ==========
+function renderCalendar() {
+  const areaF = document.getElementById('cal-filter').value;
+  const today = new Date();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay() + 1 + calWeekOffset*7);
+
+  const days = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(startOfWeek); d.setDate(startOfWeek.getDate()+i);
+    days.push(d);
+  }
+  const fmt = d=>d.toISOString().slice(0,10);
+  document.getElementById('cal-range').textContent = `${days[0].toLocaleDateString('en-IN',{day:'numeric',month:'short'})} – ${days[6].toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}`;
+
+  const times = ['12:00','12:30','13:00','13:30','14:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00'];
+  const todayStr = fmt(today);
+
+  let html = `<div class="cal-grid" style="grid-template-columns:70px repeat(7,1fr)">`;
+  html += `<div class="cal-header">Time</div>`;
+  days.forEach(d=>{
+    const isToday = fmt(d)===todayStr;
+    html += `<div class="cal-header" style="${isToday?'color:var(--accent);font-weight:600':''}">${d.toLocaleDateString('en-IN',{weekday:'short'})}<br>${d.getDate()}</div>`;
+  });
+
+  times.forEach(t=>{
+    html += `<div class="cal-time">${t}</div>`;
+    days.forEach(d=>{
+      const dateStr = fmt(d);
+      const events = reservations.filter(r=>r.date===dateStr&&r.time===t&&(!areaF||r.area===areaF));
+      html += `<div class="cal-cell" onclick="showCalDay('${dateStr}')">`;
+      events.forEach(e=>{
+        const cls = e.tags.includes('VIP')?'vip':e.area.toLowerCase();
+        html += `<div class="cal-event ${cls}" title="${e.name} (${e.guests} guests)">${e.name.split(' ')[0]}</div>`;
+      });
+      html += `</div>`;
+    });
+  });
+  html += `</div>`;
+  document.getElementById('cal-grid').innerHTML = html;
+}
+
+function calNav(dir) { calWeekOffset+=dir; renderCalendar(); }
+
+function showCalDay(dateStr) {
+  const res = reservations.filter(r=>r.date===dateStr).sort((a,b)=>a.time.localeCompare(b.time));
+  const panel = document.getElementById('cal-day-detail');
+  document.getElementById('cal-detail-title').textContent = fmtDate(dateStr)+' — Full Schedule';
+  const body = document.getElementById('cal-detail-body');
+  if(!res.length){body.innerHTML='<div class="empty-state">No reservations this day</div>';}
+  else{
+    body.innerHTML = `<table class="data-table"><thead><tr><th>Time</th><th>Guest</th><th>Guests</th><th>Area</th><th>Table</th><th>Tags</th></tr></thead><tbody>
+    ${res.map(r=>`<tr><td>${r.time}</td><td class="td-name">${r.name}</td><td>${r.guests}</td>
+      <td><span class="badge ${areaBadge(r.area)}">${r.area}</span></td>
+      <td>T${r.tableId}</td>
+      <td>${r.tags.map(t=>`<span class="badge ${tagBadge(t)}">${t}</span>`).join(' ')}</td></tr>`).join('')}
+    </tbody></table>`;
+  }
+  panel.style.display='block';
+}
+
+// ========== TABLES & AREAS ==========
+function switchTab(area, el) {
+  currentArea = area.charAt(0).toUpperCase()+area.slice(1);
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderAreaTables();
+}
+
+function renderAreaTables() {
+  const today = new Date().toISOString().slice(0,10);
+  const areaTables = tables.filter(t=>t.area===currentArea);
+  const avail = areaTables.filter(t=>t.status==='available').length;
+  const res = areaTables.filter(t=>t.status==='reserved').length;
+
+  document.getElementById('area-tab-title').textContent = currentArea+' Tables';
+  document.getElementById('area-avail-count').textContent = avail+' available';
+  document.getElementById('area-res-count').textContent = res+' reserved';
+
+  const layout = document.getElementById('area-layout');
+  layout.innerHTML = '';
+  areaTables.forEach(t=>{
+    const div = document.createElement('div');
+    div.className = `table-tile ${t.status}`;
+    div.style.cursor='pointer';
+    div.innerHTML = `<div class="t-num">T${t.id}</div><div class="t-cap">${t.cap} pax</div>`;
+    div.onclick=()=>{
+      document.querySelectorAll('#area-layout .table-tile').forEach(x=>x.classList.remove('selected'));
+      div.classList.add('selected');
+      showTableDetail(t.id);
+      document.getElementById('status-table').value = t.id;
+      document.getElementById('status-val').value = t.status;
+    };
+    layout.appendChild(div);
+  });
+
+  const tbody = document.getElementById('area-bookings-tbody');
+  tbody.innerHTML = '';
+  const todayRes = reservations.filter(r=>r.date===today&&r.area===currentArea).sort((a,b)=>a.time.localeCompare(b.time));
+  todayRes.forEach(r=>{
+    tbody.innerHTML += `<tr><td>T${r.tableId}</td><td class="td-name">${r.name}</td><td>${r.time}</td><td>${r.guests}</td>
+      <td><span class="badge badge-amber">Reserved</span></td></tr>`;
+  });
+  if(!todayRes.length) tbody.innerHTML='<tr><td colspan="5"><div class="empty-state" style="padding:16px">No bookings today</div></td></tr>';
+}
+
+function showTableDetail(tid) {
+  const t = tables.find(x=>x.id===tid);
+  const res = reservations.filter(r=>r.tableId===tid).sort((a,b)=>b.date.localeCompare(a.date));
+  const panel = document.getElementById('table-detail-panel');
+  panel.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div><div style="font-size:20px;font-weight:500;color:var(--text)">Table ${t.id}</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:2px">${t.area} · ${t.cap} pax capacity</div></div>
+      <span class="badge ${t.status==='available'?'badge-green':t.status==='reserved'?'badge-amber':'badge-red'}">${t.status}</span>
+    </div>
+    <div class="divider"></div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:8px">RECENT BOOKINGS</div>
+    ${res.slice(0,5).map(r=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+      <div style="color:var(--text);font-weight:500">${r.name}</div>
+      <div style="color:var(--text3);font-size:12px;margin-top:2px">${fmtDate(r.date)} at ${r.time} · ${r.guests} guests</div>
+    </div>`).join('')}
+    ${!res.length?'<div style="color:var(--text3);font-size:12px;padding:8px 0">No booking history</div>':''}`;
+}
+
+function updateTableStatus() {
+  const tid = parseInt(document.getElementById('status-table').value);
+  const status = document.getElementById('status-val').value;
+  if(!tid){notify('Click a table first','error');return;}
+  const t = tables.find(x=>x.id===tid);
+  if(t){t.status=status;save();renderAreaTables();notify(`Table ${tid} marked as ${status}`);}
+}
+
+// ========== ANALYTICS ==========
+function renderAnalytics() {
+  const total = reservations.length;
+  const vip = reservations.filter(r=>r.tags.includes('VIP')).length;
+  const avg = total ? Math.round(reservations.reduce((s,r)=>s+r.guests,0)/total*10)/10 : 0;
+  const banquet = reservations.filter(r=>r.area==='Banquet').length;
+  document.getElementById('an-total').textContent = total;
+  document.getElementById('an-vip').textContent = vip;
+  document.getElementById('an-avg').textContent = avg;
+  document.getElementById('an-banquet').textContent = banquet;
+
+  // Day of week
+  const dowData = [0,0,0,0,0,0,0];
+  const dowLabels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  reservations.forEach(r=>{const d=new Date(r.date).getDay();dowData[(d+6)%7]++;});
+  const maxDow = Math.max(...dowData)||1;
+  const dowChart = document.getElementById('dow-chart');
+  dowChart.innerHTML = dowData.map((v,i)=>`<div class="bar" style="height:${Math.round(v/maxDow*76)+4}px" title="${dowLabels[i]}: ${v}"></div>`).join('');
+  document.getElementById('dow-labels').innerHTML = dowLabels.map(l=>`<div class="bar-label">${l}</div>`).join('');
+
+  // Peak hours
+  const hourData = {};
+  reservations.forEach(r=>{const h=r.time.split(':')[0];hourData[h]=(hourData[h]||0)+1;});
+  const hours = Object.keys(hourData).sort();
+  const maxH = Math.max(...Object.values(hourData))||1;
+  document.getElementById('hour-chart').innerHTML = hours.map(h=>`<div class="bar" style="height:${Math.round(hourData[h]/maxH*76)+4}px;background:var(--blue)" title="${h}:00 (${hourData[h]})"></div>`).join('');
+  document.getElementById('hour-labels').innerHTML = hours.map(h=>`<div class="bar-label">${h}</div>`).join('');
+
+  // Area breakdown
+  const areaEl = document.getElementById('area-breakdown');
+  areaEl.innerHTML = '';
+  AREAS.forEach(a=>{
+    const count = reservations.filter(r=>r.area===a).length;
+    const pct = total ? Math.round(count/total*100) : 0;
+    areaEl.innerHTML += `<div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
+        <span style="color:var(--text)">${a}</span>
+        <span style="color:var(--text3)">${count} (${pct}%)</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${a==='Indoor'?'var(--blue)':a==='Outdoor'?'var(--green)':'var(--purple)'}"></div></div>
+    </div>`;
+  });
+
+  // Tags
+  const tagEl = document.getElementById('tag-breakdown');
+  tagEl.innerHTML = '';
+  TAGS.forEach(t=>{
+    const count = reservations.filter(r=>r.tags.includes(t)).length;
+    const pct = total ? Math.round(count/total*100) : 0;
+    tagEl.innerHTML += `<div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="badge ${tagBadge(t)}">${t}</span>
+      <span style="font-size:13px;color:var(--text3)">${count}</span>
+    </div>`;
+  });
+}
+
+// ========== MODAL HELPERS ==========
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
+});
+
+// ========== UTILS ==========
+function areaBadge(a){return a==='Indoor'?'badge-blue':a==='Outdoor'?'badge-green':'badge-purple';}
+function tagBadge(t){
+  const m={VIP:'badge-amber',Birthday:'badge-pink',Anniversary:'badge-purple','Special Request':'badge-blue','Large Party':'badge-red'};
+  return m[t]||'badge-gray';
+}
+function fmtDate(d){
+  const dt = new Date(d+'T00:00:00');
+  return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+}
+
+// Badge for pink
+document.head.insertAdjacentHTML('beforeend',`<style>.badge-pink{background:rgba(212,83,126,0.12);color:#d4537e;}</style>`);
+
+// ========== INIT ==========
+renderDashboard();
+updateQueueBadge();
+
+// Upcoming reservations notifications
+function checkUpcomingNotifs() {
+  const now = new Date();
+  const in30 = new Date(now.getTime()+30*60000);
+  const dateStr = now.toISOString().slice(0,10);
+  const timeStr = in30.toTimeString().slice(0,5);
+  const upcoming = reservations.filter(r=>r.date===dateStr&&r.time===timeStr);
+  upcoming.forEach(r=>notify(`Upcoming: ${r.name} at ${r.time} (T${r.tableId})`,'info'));
+}
+setInterval(checkUpcomingNotifs,60000);
+</script>
+</body>
+</html>
